@@ -227,6 +227,20 @@
   padding: 8px 10px;
   min-width: 110px;
 }
+.lodgingRow{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:6px;
+}
+.lodgingRow .range{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:nowrap;
+}
+.lodgingRow .dash{opacity:.75}
 .noteArea{
   width: 100%;
   background: rgba(255,255,255,0.04);
@@ -239,7 +253,8 @@
 }
 @media (max-width: 520px){
   .dateinp{min-width: 100%; width: 100%}
-  .timeinp{min-width: 100%; width: 100%}
+  .lodgingRow .range{width: 100%}
+  .lodgingRow .range .timeinp{min-width: 0; width: 100%; flex: 1}
 }
 
 /* Linki: lista */
@@ -1011,19 +1026,24 @@
             <br>
             <span class="mono">Link:</span> <span contenteditable="true" data-lk="url" data-li="${i}">${escapeHtml(l.url||"")}</span>
             <br>
-            <span class="mono">IN:</span>
-            <input type="date" class="dateinp" data-lk="checkIn" data-li="${i}" value="${escapeHtml(l.checkIn||"")}">
-            <span class="mono">od</span>
-            <input type="time" class="timeinp" data-lk="checkInFrom" data-li="${i}" value="${escapeHtml(normalizeTime(l.checkInFrom)||"")}">
-            <span class="mono">do</span>
-            <input type="time" class="timeinp" data-lk="checkInTo" data-li="${i}" value="${escapeHtml(normalizeTime(l.checkInTo)||"")}">
-            <br>
-            <span class="mono">OUT:</span>
-            <input type="date" class="dateinp" data-lk="checkOut" data-li="${i}" value="${escapeHtml(l.checkOut||"")}">
-            <span class="mono">od</span>
-            <input type="time" class="timeinp" data-lk="checkOutFrom" data-li="${i}" value="${escapeHtml(normalizeTime(l.checkOutFrom)||"")}">
-            <span class="mono">do</span>
-            <input type="time" class="timeinp" data-lk="checkOutTo" data-li="${i}" value="${escapeHtml(normalizeTime(l.checkOutTo)||"")}">
+            <div class="lodgingRow">
+              <span class="mono">IN:</span>
+              <input type="date" class="dateinp" data-lk="checkIn" data-li="${i}" value="${escapeHtml(l.checkIn||"")}">
+              <span class="range">
+                <input type="time" class="timeinp" data-lk="checkInFrom" data-li="${i}" value="${escapeHtml(normalizeTime(l.checkInFrom)||"")}">
+                <span class="dash">–</span>
+                <input type="time" class="timeinp" data-lk="checkInTo" data-li="${i}" value="${escapeHtml(normalizeTime(l.checkInTo)||"")}">
+              </span>
+            </div>
+            <div class="lodgingRow">
+              <span class="mono">OUT:</span>
+              <input type="date" class="dateinp" data-lk="checkOut" data-li="${i}" value="${escapeHtml(l.checkOut||"")}">
+              <span class="range">
+                <input type="time" class="timeinp" data-lk="checkOutFrom" data-li="${i}" value="${escapeHtml(normalizeTime(l.checkOutFrom)||"")}">
+                <span class="dash">–</span>
+                <input type="time" class="timeinp" data-lk="checkOutTo" data-li="${i}" value="${escapeHtml(normalizeTime(l.checkOutTo)||"")}">
+              </span>
+            </div>
             <br>
             <textarea class="noteArea" data-lk="notes" data-li="${i}" placeholder="Uwagi (np. dowód + karta, self check-in, zgłosić godzinę przyjazdu...)">${escapeHtml(l.notes||"")}</textarea>
           </div>
