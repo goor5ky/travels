@@ -219,8 +219,27 @@
   padding: 8px 10px;
   min-width: 155px;
 }
+.timeinp{
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.10);
+  color: inherit;
+  border-radius: 10px;
+  padding: 8px 10px;
+  min-width: 110px;
+}
+.noteArea{
+  width: 100%;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.10);
+  color: inherit;
+  border-radius: 10px;
+  padding: 8px 10px;
+  min-height: 64px;
+  resize: vertical;
+}
 @media (max-width: 520px){
   .dateinp{min-width: 100%; width: 100%}
+  .timeinp{min-width: 100%; width: 100%}
 }
 
 /* Linki: lista */
@@ -992,10 +1011,21 @@
             <br>
             <span class="mono">Link:</span> <span contenteditable="true" data-lk="url" data-li="${i}">${escapeHtml(l.url||"")}</span>
             <br>
-            <span class="mono">IN:</span> <input type="date" class="dateinp" data-lk="checkIn" data-li="${i}" value="${escapeHtml(l.checkIn||"")}">
-            <span class="mono">OUT:</span> <input type="date" class="dateinp" data-lk="checkOut" data-li="${i}" value="${escapeHtml(l.checkOut||"")}">
+            <span class="mono">IN:</span>
+            <input type="date" class="dateinp" data-lk="checkIn" data-li="${i}" value="${escapeHtml(l.checkIn||"")}">
+            <span class="mono">od</span>
+            <input type="time" class="timeinp" data-lk="checkInFrom" data-li="${i}" value="${escapeHtml(normalizeTime(l.checkInFrom)||"")}">
+            <span class="mono">do</span>
+            <input type="time" class="timeinp" data-lk="checkInTo" data-li="${i}" value="${escapeHtml(normalizeTime(l.checkInTo)||"")}">
             <br>
-            <span contenteditable="true" data-lk="notes" data-li="${i}">${escapeHtml(l.notes||"")}</span>
+            <span class="mono">OUT:</span>
+            <input type="date" class="dateinp" data-lk="checkOut" data-li="${i}" value="${escapeHtml(l.checkOut||"")}">
+            <span class="mono">od</span>
+            <input type="time" class="timeinp" data-lk="checkOutFrom" data-li="${i}" value="${escapeHtml(normalizeTime(l.checkOutFrom)||"")}">
+            <span class="mono">do</span>
+            <input type="time" class="timeinp" data-lk="checkOutTo" data-li="${i}" value="${escapeHtml(normalizeTime(l.checkOutTo)||"")}">
+            <br>
+            <textarea class="noteArea" data-lk="notes" data-li="${i}" placeholder="Uwagi (np. dowód + karta, self check-in, zgłosić godzinę przyjazdu...)">${escapeHtml(l.notes||"")}</textarea>
           </div>
         </div>
         <div class="x" title="Usuń" data-del="${i}">✕</div>
@@ -1017,6 +1047,24 @@
         state.lodgings[i][k] = inp.value;
         save();
         if(typeof calcLodgingNights === 'function') calcLodgingNights();
+      });
+    });
+
+    // time windows (optional)
+    box.querySelectorAll('.timeinp').forEach(inp=>{
+      inp.addEventListener('change', ()=>{
+        const i = Number(inp.dataset.li), k = inp.dataset.lk;
+        state.lodgings[i][k] = normalizeTime(inp.value);
+        save();
+      });
+    });
+
+    // notes textarea
+    box.querySelectorAll('textarea[data-lk="notes"]').forEach(ta=>{
+      ta.addEventListener('input', ()=>{
+        const i = Number(ta.dataset.li), k = ta.dataset.lk;
+        state.lodgings[i][k] = ta.value;
+        save();
       });
     });
 
@@ -1247,7 +1295,19 @@
     renderPlan(); save();
   });
   safeBind("btnAddLodging", "click", ()=>{ 
-    state.lodgings.push({name:"Nowy nocleg", city:"", address:"", url:"", checkIn:"", checkOut:"", notes:""});
+    state.lodgings.push({
+      name:"Nowy nocleg",
+      city:"",
+      address:"",
+      url:"",
+      checkIn:"",
+      checkInFrom:"",
+      checkInTo:"",
+      checkOut:"",
+      checkOutFrom:"",
+      checkOutTo:"",
+      notes:""
+    });
     renderLodgings(); save();
   });
 
