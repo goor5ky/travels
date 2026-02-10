@@ -15,7 +15,10 @@
     }
     *{box-sizing:border-box}
     body{
-      margin:0; font-family:var(--sans); background:radial-gradient(1200px 800px at 20% 10%, #0f2344 0%, var(--bg) 50%), var(--bg);
+      margin:0;
+      font-family:var(--sans);
+      font-size:14px;
+      background:radial-gradient(1200px 800px at 20% 10%, #0f2344 0%, var(--bg) 50%), var(--bg);
       color:var(--text);
     }
     header{
@@ -50,6 +53,7 @@
       cursor:pointer;
       box-shadow: 0 8px 18px rgba(0,0,0,.25);
       font-weight:650;
+      font-size:13px;
     }
     button:hover{border-color:rgba(96,165,250,.55)}
     .btn.secondary{background:rgba(15,23,42,.75)}
@@ -126,6 +130,16 @@
     }
     
     table{width:100%; border-collapse:collapse; font-size:13px}
+    /* Mobile: pozwól przewijać szerokie tabele (Plan dzień po dniu) */
+    .tableWrap{width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch}
+    #planTable{min-width:860px}
+
+    /* Mobile-friendly scroll containers for wide tables */
+    .tableWrap{width:100%; overflow:auto; -webkit-overflow-scrolling:touch}
+    .tableWrap table{min-width:860px}
+    @media (max-width: 640px){
+      .tableWrap table{min-width:920px}
+    }
     th,td{padding:10px 8px; border-bottom:1px solid rgba(255,255,255,.06); vertical-align:top}
     th{color:var(--muted); font-weight:700; text-align:left}
     tr:hover td{background:rgba(96,165,250,.06)}
@@ -157,6 +171,7 @@
       padding:10px 12px;
       outline:none;
       font-family:var(--sans);
+      font-size:14px;
     }
     textarea{min-height:90px; resize:vertical}
     .muted{color:var(--muted); font-size:12px}
@@ -219,6 +234,14 @@
   padding: 8px 10px;
   min-width: 155px;
 }
+
+/* Linki: klikane podglądy */
+.linkOpen{display:inline-flex; align-items:center; gap:6px; margin-top:6px; font-size:12px; color:var(--accent)}
+.linkOpen .ext{opacity:.85}
+.lodgingLinkRow{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:6px 0}
+.lodgingLinkRow .mono{white-space:nowrap}
+.lodgingLinkRow input{flex:1; min-width:210px}
+.lodgingLinkRow a{font-size:12px}
 .timeinp{
   background: rgba(255,255,255,0.04);
   border: 1px solid rgba(255,255,255,0.10);
@@ -353,19 +376,21 @@
       <div class="hint">Dodawaj punkty, linki, notatki</div>
     </div>
     <div class="bd">
-      <table id="planTable">
-        <thead>
-          <tr>
-            <th style="width:110px;">Data</th>
-            <th style="width:140px;">Miasto / baza</th>
-            <th style="width:170px;">Godzina</th>
-            <th>Plan (skrót)</th>
-            <th style="width:140px;">Transport</th>
-            <th style="width:120px;">Status</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+      <div class="tableWrap" aria-label="Plan dzień po dniu (przewijanie w poziomie na telefonie)">
+        <table id="planTable">
+          <thead>
+            <tr>
+              <th style="width:110px;">Data</th>
+              <th style="width:140px;">Miasto / baza</th>
+              <th style="width:170px;">Godzina</th>
+              <th>Plan (skrót)</th>
+              <th style="width:140px;">Transport</th>
+              <th style="width:120px;">Status</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
 
       <div style="margin-top:12px" class="row">
         <button class="smallbtn" id="btnAddDay">+ Dodaj dzień</button>
@@ -618,6 +643,14 @@
     const h = Math.min(23, Math.max(0, Number(m[1])));
     const mi = Math.min(59, Math.max(0, Number(m[2])));
     return String(h).padStart(2,'0') + ":" + String(mi).padStart(2,'0');
+  }
+
+  function makeHref(url){
+    const u = (url||"").trim();
+    if(!u) return "";
+    if(/^https?:\/\//i.test(u)) return u;
+    // allow copying like "booking.com/..." or "www..."
+    return "https://" + u.replace(/^\/\//, "");
   }
   function timeToMin(hm){
     const t = normalizeTime(hm);
@@ -1024,7 +1057,11 @@
             <span contenteditable="true" data-lk="city" data-li="${i}">${escapeHtml(l.city||"")}</span>
             • <span contenteditable="true" data-lk="address" data-li="${i}">${escapeHtml(l.address||"")}</span>
             <br>
-            <span class="mono">Link:</span> <span contenteditable="true" data-lk="url" data-li="${i}">${escapeHtml(l.url||"")}</span>
+	            <div class="lodgingLinkRow">
+	              <span class="mono">Link:</span>
+	              <input type="text" class="lodgingUrl" data-lk="url" data-li="${i}" placeholder="URL (Booking/strona)" value="${escapeHtml(l.url||"")}">
+	              <a class="linkOpen" data-open-url="${i}" href="#" target="_blank" rel="noopener noreferrer" style="display:none"><span class="ext">↗</span> Otwórz</a>
+	            </div>
             <br>
             <div class="lodgingRow">
               <span class="mono">IN:</span>
@@ -1059,6 +1096,24 @@
         save();
       });
     });
+
+	    // lodging URL as clickable link (without breaking editing)
+	    box.querySelectorAll('.lodgingUrl').forEach(inp=>{
+	      const i = Number(inp.dataset.li);
+	      const open = box.querySelector(`a[data-open-url="${i}"]`);
+	      const sync = () => {
+	        const href = makeHref(inp.value);
+	        if(!open) return;
+	        if(href){ open.href = href; open.style.display = 'inline-flex'; }
+	        else { open.href = '#'; open.style.display = 'none'; }
+	      };
+	      sync();
+	      inp.addEventListener('input', ()=>{
+	        state.lodgings[i].url = inp.value;
+	        save();
+	        sync();
+	      });
+	    });
 
     /* LODGINGS_DATE_LISTENERS */
     box.querySelectorAll('.dateinp').forEach(inp=>{
@@ -1216,18 +1271,37 @@
         <div class="txt">
           <div class="d">
             <input class="linkTitle" type="text" placeholder="Tytuł (opcjonalnie)" value="${escapeHtml(lnk.title||"")}" data-li="${i}" data-lk="title">
-            <input class="linkUrl" type="text" placeholder="URL" value="${escapeHtml(lnk.url||"")}" data-li="${i}" data-lk="url">
+	            <input class="linkUrl" type="text" placeholder="URL" value="${escapeHtml(lnk.url||"")}" data-li="${i}" data-lk="url">
+	            <a class="linkOpen" data-link-open="${i}" href="#" target="_blank" rel="noopener noreferrer" style="display:none"><span class="ext">↗</span> Otwórz</a>
           </div>
         </div>
         <div class="x" title="Usuń" data-ldel="${i}">✕</div>
       `;
       list.appendChild(row);
     }
+	    // initial link open-state
+	    list.querySelectorAll('.linkUrl').forEach(inp=>{
+	      const i = Number(inp.dataset.li);
+	      const open = list.querySelector(`a[data-link-open="${i}"]`);
+	      if(!open) return;
+	      const href = makeHref(inp.value);
+	      if(href){ open.href = href; open.style.display = 'inline-flex'; }
+	      else { open.href = '#'; open.style.display = 'none'; }
+	    });
     list.querySelectorAll("input").forEach(inp=>{
       inp.addEventListener("input", ()=>{
         const i = Number(inp.dataset.li), k = inp.dataset.lk;
         state.como.links[i][k] = inp.value;
         save();
+	        // keep open-link in sync when URL changes
+	        if(k === 'url'){
+	          const open = list.querySelector(`a[data-link-open="${i}"]`);
+	          if(open){
+	            const href = makeHref(inp.value);
+	            if(href){ open.href = href; open.style.display = 'inline-flex'; }
+	            else { open.href = '#'; open.style.display = 'none'; }
+	          }
+	        }
       });
     });
     list.querySelectorAll("[data-ldel]").forEach(b=>{
