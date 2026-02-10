@@ -44,6 +44,10 @@
     h1{margin:0; font-size:18px; line-height:1.15}
     .sub{margin:2px 0 0; color:var(--muted); font-size:13px}
     .actions{display:flex; gap:10px; flex-wrap:wrap}
+    .menuBtn{display:none}
+    .menuPanel{display:flex; flex-direction:column; gap:10px}
+    header{transition: transform .22s ease}
+    header.header-hidden{transform: translateY(-110%)}
     button, .btn{
       border:1px solid rgba(255,255,255,.10);
       background:rgba(17,24,39,.7);
@@ -289,6 +293,27 @@
   border-radius: 10px;
   padding: 8px 10px;
 }
+
+
+    /* Compact header for mobile landscape */
+    @media (orientation: landscape) and (max-height: 520px){
+      body.compactHeader header .wrap{padding:8px 12px;}
+      body.compactHeader header h1{font-size:16px; line-height:1.1;}
+      body.compactHeader header .sub{display:none;}
+      body.compactHeader header .badge{display:none;}
+      body.compactHeader header .menuBtn{display:inline-flex; padding:8px 10px;}
+      body.compactHeader header .headRow select{min-width:160px !important; max-width:70vw !important;}
+      body.compactHeader header .actions{position:relative;}
+      body.compactHeader header #headerPanel{display:none; position:absolute; right:12px; top:100%;
+        margin-top:10px; padding:12px; border-radius:14px;
+        background: rgba(11,15,23,.95); border:1px solid rgba(255,255,255,.10);
+        box-shadow: 0 18px 45px rgba(0,0,0,.45);
+        max-height:70vh; overflow:auto; z-index:60;
+      }
+      body.compactHeader header.menu-open #headerPanel{display:flex;}
+      body.compactHeader header.header-hidden{transform: translateY(-130%);}
+    }
+
 </style>
 
   <link rel="manifest" href="manifest.webmanifest">
@@ -298,7 +323,7 @@
 
 </head>
 <body>
-<header>
+<header id="appHeader">
   <div class="wrap">
     <div class="top">
       <div class="title">
@@ -308,22 +333,32 @@
           <div class="sub" id="tripSub">Dashboard do aktualizowania na bieżąco (auto‑zapis w przeglądarce).</div>
         </div>
       </div>
+
       <div class="actions">
-        <div class="row" style="gap:10px; align-items:center;">
+        <div class="row headRow" style="gap:10px; align-items:center;">
           <span class="pill"><span class="dot ok"></span> Podróż</span>
           <select id="tripSelect" style="min-width:240px; max-width:420px"></select>
-          <button class="btn secondary" id="btnNewTrip" title="Nowa podróż">+ Nowa</button>
-          <button class="btn secondary" id="btnDupTrip" title="Duplikuj bieżącą">Duplikuj</button>
-          <button class="btn danger" id="btnDelTrip" title="Usuń bieżącą">Usuń</button>
+          <button class="btn secondary menuBtn" id="btnHeaderMenu" aria-label="Menu">☰</button>
         </div>
-        <button class="btn secondary" id="btnExport">Eksport JSON</button>
-        <label class="btn secondary" style="display:inline-flex; gap:10px; align-items:center;">
-          Import JSON <input id="fileImport" type="file" accept="application/json" style="display:none">
-        </label>
-        <button class="btn ok" id="btnSave">Zapisz teraz</button>
-        <button class="btn danger" id="btnReset">Reset (czyści wszystko)</button>
 
+        <div class="menuPanel" id="headerPanel">
+          <div class="row" style="gap:10px; align-items:center; flex-wrap:wrap">
+            <button class="btn secondary" id="btnNewTrip" title="Nowa podróż">+ Nowa</button>
+            <button class="btn secondary" id="btnDupTrip" title="Duplikuj bieżącą">Duplikuj</button>
+            <button class="btn danger" id="btnDelTrip" title="Usuń bieżącą">Usuń</button>
+          </div>
+
+          <div class="row" style="gap:10px; align-items:center; flex-wrap:wrap">
+            <button class="btn secondary" id="btnExport">Eksport JSON</button>
+            <label class="btn secondary" style="display:inline-flex; gap:10px; align-items:center;">
+              Import JSON <input id="fileImport" type="file" accept="application/json" style="display:none">
+            </label>
+            <button class="btn ok" id="btnSave">Zapisz teraz</button>
+            <button class="btn danger" id="btnReset">Reset (czyści wszystko)</button>
+          </div>
+        </div>
       </div>
+
     </div>
   </div>
 </header>
@@ -1503,6 +1538,55 @@ const blob = new Blob([JSON.stringify(state, null, 2)], {type:"application/json"
       updateDebugFooter();
     }catch(e){}
   }, 60000);
+
+
+  // --- Mobile landscape header: compact + auto-hide + menu ---
+  const _header = document.getElementById("appHeader");
+  const _menuBtn = document.getElementById("btnHeaderMenu");
+  const _panel = document.getElementById("headerPanel");
+  const _mqCompact = window.matchMedia("(orientation: landscape) and (max-height: 520px)");
+  function _applyCompactHeader(){
+    const on = !!_mqCompact.matches;
+    document.body.classList.toggle("compactHeader", on);
+    if(!on && _header){
+      _header.classList.remove("menu-open","header-hidden");
+    }
+  }
+  try{
+    _applyCompactHeader();
+    _mqCompact.addEventListener?.("change", _applyCompactHeader);
+  }catch(e){}
+
+  if(_menuBtn && _header){
+    _menuBtn.addEventListener("click", (e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      _header.classList.toggle("menu-open");
+      _header.classList.remove("header-hidden");
+    });
+  }
+
+  // Close menu when tapping outside
+  document.addEventListener("click", (e)=>{
+    if(!_header || !document.body.classList.contains("compactHeader")) return;
+    if(!_header.classList.contains("menu-open")) return;
+    const t = e.target;
+    if(t && (t.closest?.("#headerPanel") || t.closest?.("#btnHeaderMenu"))) return;
+    _header.classList.remove("menu-open");
+  });
+
+  // Auto-hide on scroll down, show on scroll up (compact mode only)
+  let _lastY = window.scrollY || 0;
+  window.addEventListener("scroll", ()=>{
+    if(!_header || !document.body.classList.contains("compactHeader")) return;
+    if(_header.classList.contains("menu-open")) return;
+    const y = window.scrollY || 0;
+    const dy = y - _lastY;
+    if(Math.abs(dy) < 8) return;
+    if(dy > 0 && y > 60) _header.classList.add("header-hidden");
+    else _header.classList.remove("header-hidden");
+    _lastY = y;
+  }, {passive:true});
 
   renderAll();
   persistStore();
