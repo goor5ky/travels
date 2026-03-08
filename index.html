@@ -136,6 +136,7 @@
     table{width:100%; border-collapse:collapse; font-size:13px}
     /* Mobile: pozwól przewijać szerokie tabele (Plan dzień po dniu) */
     .tableWrap{width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch}
+    .planDel{padding:6px 8px; min-width:auto; line-height:1}
     #planTable{min-width:860px}
 
     /* Mobile-friendly scroll containers for wide tables */
@@ -421,6 +422,7 @@
               <th>Plan (skrót)</th>
               <th style="width:140px;">Transport</th>
               <th style="width:120px;">Status</th>
+              <th style="width:46px;"></th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -1011,6 +1013,9 @@
             ${["plan","ok","uwaga","gotowe","tranzyt"].map(s=>`<option value="${s}" ${(d.status===s)?"selected":""}>${s}</option>`).join("")}
           </select>
         </td>
+        <td style="text-align:center">
+          <button class="btn smallbtn danger planDel" data-del="${i}" title="Usuń">✕</button>
+        </td>
       `;
       tbody.appendChild(tr);
     }
@@ -1041,6 +1046,17 @@
         const i = Number(sel.dataset.i), k = sel.dataset.k;
         state.planDays[i][k] = sel.value;
         save();
+      });
+    });
+
+    // delete row
+    tbody.querySelectorAll(".planDel").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const i = Number(btn.dataset.del);
+        if(Number.isNaN(i)) return;
+        state.planDays.splice(i,1);
+        save();
+        renderPlan();
       });
     });
   }
